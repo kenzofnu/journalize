@@ -32,7 +32,8 @@ public class JournalEntryController {
     private final UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<EntryResponse> create(@Valid @RequestBody CreateEntryRequest request, @AuthenticationPrincipal User user) {
+    public ResponseEntity<EntryResponse> create(@Valid @RequestBody CreateEntryRequest request,
+            @AuthenticationPrincipal User user) {
 
         JournalEntry journal = new JournalEntry();
         journal.setContent(request.content());
@@ -46,19 +47,21 @@ public class JournalEntryController {
 
     @GetMapping
     public List<EntryResponse> list(@AuthenticationPrincipal User user) {
-        return entryRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream().map(EntryResponse::from).toList();
+        return entryRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream().map(EntryResponse::from)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public EntryResponse get(@PathVariable Long id,@AuthenticationPrincipal User user) {
-        return EntryResponse.from(findEntry(id,user));
+    public EntryResponse get(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        return EntryResponse.from(findEntry(id, user));
 
     }
 
     @PutMapping("/{id}")
-    public EntryResponse update(@PathVariable Long id, @Valid @RequestBody UpdateEntryRequest request,@AuthenticationPrincipal User user) {
+    public EntryResponse update(@PathVariable Long id, @Valid @RequestBody UpdateEntryRequest request,
+            @AuthenticationPrincipal User user) {
 
-        JournalEntry entry = findEntry(id,user);
+        JournalEntry entry = findEntry(id, user);
         entry.setContent(request.content());
 
         JournalEntry saved = entryRepository.save(entry);
@@ -68,9 +71,9 @@ public class JournalEntryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id,@AuthenticationPrincipal User user) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, @AuthenticationPrincipal User user) {
 
-        entryRepository.delete(findEntry(id,user));
+        entryRepository.delete(findEntry(id, user));
         return ResponseEntity.noContent().build();
     }
 
@@ -78,7 +81,7 @@ public class JournalEntryController {
         JournalEntry entry = entryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
 
-        if (!entry.getUser().getId().equals(user.getId()))) {
+        if (!entry.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Forbidden user");
         }
 
