@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
+import dev.fnukenzo.journalize.ai.EmbeddingService;
 import dev.fnukenzo.journalize.ai.MoodService;
 import dev.fnukenzo.journalize.journal.dto.CreateEntryRequest;
 import dev.fnukenzo.journalize.journal.dto.EntryResponse;
@@ -30,6 +33,7 @@ public class JournalEntryController {
 
     private final JournalEntryRepository entryRepository;
     private final MoodService moodService;
+    private final EmbeddingService embeddingService;
 
     @PostMapping
     public ResponseEntity<EntryResponse> create(@Valid @RequestBody CreateEntryRequest request,
@@ -39,6 +43,7 @@ public class JournalEntryController {
         journal.setContent(request.content());
         journal.setUser(user);
         journal.setMood(moodService.detectMood(request.content()));
+        journal.setEmbedding(EmbeddingService.serialize(embeddingService.embed(request.content())));
 
         JournalEntry saved = entryRepository.save(journal);
 
@@ -50,6 +55,42 @@ public class JournalEntryController {
     public List<EntryResponse> list(@AuthenticationPrincipal User user) {
         return entryRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream().map(EntryResponse::from)
                 .toList();
+    }
+
+    @GetMapping("/search")
+    public List<EntryResponse> search(@RequestParam("q") String q, @AuthenticationPrincipal User user) {
+        float[] queryVector = embeddingService.embed(q);
+        List<JournalEntry> entries = entryRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        if (queryVector == null) {
+            return List.of();
+        }
+
+        record Scored(JournalEntry entry, double score) {
+        }
+
+        return entries.stream()
+                .filter(e -> e.getEmbedding() != null && !e.getEmbedding().isBlank())
+                .map(e -> new Scored(e, cosineSimilarity(queryVector, EmbeddingService.parse(e.getEmbedding()))))
+                .sorted((a, b) -> Double.compare(b.score(), a.score()))
+                .limit(10)
+                .map(s -> EntryResponse.from(s.entry()))
+                .toList();
+    }
+
+    private static double cosineSimilarity(float[] a, float[] b) {
+        if (a == null || b == null || a.length != b.length) {
+            return -1;
+        }
+        double dot = 0, normA = 0, normB = 0;
+        for (int i = 0; i < a.length; i++) {
+            dot += a[i] * b[i];
+            normA += a[i] * a[i];
+            normB += b[i] * b[i];
+        }
+        if (normA == 0 || normB == 0) {
+            return -1;
+        }
+        return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
     @GetMapping("/{id}")

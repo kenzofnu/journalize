@@ -29,6 +29,8 @@ public class SecurityConfig {
                                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/**", "/error").permitAll()
+                                                .requestMatchers("/", "/index.html", "/favicon.ico",
+                                                                "/css/**", "/js/**", "/assets/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .httpBasic(basic -> basic.disable())
                                 .formLogin(form -> form.disable()).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

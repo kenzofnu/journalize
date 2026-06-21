@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Journalize — your AI journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ece7dc; --surface: #fffdf8; --surface-2: #f7f3ea; --surface-3: #f1ece0;
+      --ink: #2b2a26; --ink-soft: #6b675e; --ink-faint: #9b968b;
+      --line: #e7e1d4; --line-soft: #efe9dd;
+      --accent: #6d5bd0; --accent-2: #9a8cf0; --accent-soft: #efecfb; --accent-ink: #4b3fa3;
+      --danger: #c0573f;
+      --shadow: 0 1px 2px rgba(43,42,38,.04), 0 6px 18px rgba(43,42,38,.05);
+      --shadow-lg: 0 10px 30px rgba(43,42,38,.10), 0 40px 80px rgba(43,42,38,.10);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif; color: var(--ink);
+      background: radial-gradient(1100px 700px at 88% -15%, #f3eee3, transparent), radial-gradient(900px 600px at -10% 115%, #e6dfd0, transparent), var(--bg);
+      -webkit-font-smoothing: antialiased; line-height: 1.55;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -.02em; }
+    .brand .dot { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(150deg, var(--accent), var(--accent-2)); display: grid; place-items: center; color: #fff; font-size: 17px; box-shadow: 0 6px 16px rgba(109,91,208,.4); }
+
+    button { font-family: inherit; cursor: pointer; border: none; transition: transform .08s, background .15s, box-shadow .15s, opacity .15s, color .15s; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; box-shadow: 0 6px 16px rgba(109,91,208,.28); }
+    .btn-primary:hover { background: #5d4cc4; }
+    .btn-ghost { background: transparent; color: var(--ink-soft); padding: 9px 14px; border-radius: 10px; font-weight: 500; font-size: 14px; }
+    .btn-ghost:hover { background: var(--surface-3); color: var(--ink); }
+    .btn-soft { background: var(--surface-3); color: var(--ink-soft); padding: 9px 14px; border-radius: 10px; font-weight: 600; font-size: 13px; }
+    .btn-soft:hover { background: #e8e1d2; color: var(--ink); }
+
+    input, textarea, select { font-family: inherit; font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; width: 100%; transition: border .15s, box-shadow .15s; resize: none; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+    input::placeholder, textarea::placeholder { color: var(--ink-faint); }
+    select { cursor: pointer; font-size: 13.5px; padding: 10px 13px; width: auto; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-soft); margin: 0 0 7px 2px; }
+
+    /* AUTH */
+    #auth-view { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .auth-card { width: 100%; max-width: 410px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 38px 34px; }
+    .auth-card .brand { font-size: 25px; justify-content: center; margin-bottom: 6px; }
+    .auth-sub { text-align: center; color: var(--ink-soft); font-size: 14px; margin-bottom: 26px; }
+    .tabs { display: flex; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+    .tabs button { flex: 1; background: transparent; color: var(--ink-soft); padding: 9px; border-radius: 9px; font-weight: 600; font-size: 14px; }
+    .tabs button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+    .field { margin-bottom: 16px; }
+    .auth-card .btn-primary { width: 100%; margin-top: 6px; padding: 13px; }
+    .msg { font-size: 13.5px; padding: 11px 14px; border-radius: 10px; margin-bottom: 16px; display: none; }
+    .msg.error { display: block; background: #fbeae5; color: var(--danger); border: 1px solid #f0d2c8; }
+
+    /* SHELL */
+    #app-view { display: none; }
+    .shell { display: grid; grid-template-columns: 272px 1fr; max-width: 1160px; margin: 30px auto; min-height: calc(100vh - 60px); background: var(--surface); border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow-lg); overflow: hidden; }
+
+    .sidebar { background: var(--surface-2); border-right: 1px solid var(--line); padding: 26px 22px; display: flex; flex-direction: column; }
+    .sidebar .brand { font-size: 21px; margin-bottom: 22px; }
+    .greeting { margin-bottom: 20px; }
+    .greeting .hi { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+    .greeting .date { font-size: 13px; color: var(--ink-faint); margin-top: 3px; }
+
+    .nav { display: flex; flex-direction: column; gap: 4px; margin-bottom: 22px; }
+    .nav button { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; background: transparent; color: var(--ink-soft); padding: 10px 12px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+    .nav button:hover { background: var(--surface-3); color: var(--ink); }
+    .nav button.active { background: var(--accent-soft); color: var(--accent-ink); }
+    .nav .ic { font-size: 15px; width: 18px; text-align: center; }
+
+    .panel { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 16px; padding: 16px 17px; margin-bottom: 16px; }
+    .panel-title { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 13px; }
+    .stat-row { display: flex; gap: 12px; }
+    .stat { flex: 1; }
+    .stat .num { font-family: 'Fraunces', serif; font-size: 27px; font-weight: 600; line-height: 1; }
+    .stat .lab { font-size: 12px; color: var(--ink-faint); margin-top: 5px; }
+    .mood-row { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; }
+    .mood-row:last-child { margin-bottom: 0; }
+    .mood-row .ico { font-size: 15px; width: 18px; text-align: center; }
+    .mood-row .nm { font-size: 13px; font-weight: 500; text-transform: capitalize; min-width: 62px; color: var(--ink-soft); }
+    .mood-row .bar { flex: 1; height: 7px; background: var(--surface-3); border-radius: 99px; overflow: hidden; }
+    .mood-row .bar > i { display: block; height: 100%; border-radius: 99px; }
+    .mood-row .ct { font-size: 12px; color: var(--ink-faint); min-width: 14px; text-align: right; }
+    .muted-empty { font-size: 12.5px; color: var(--ink-faint); line-height: 1.5; }
+
+    .sidebar .spacer { flex: 1; }
+    .signout { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; }
+    .signout .name { font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
+
+    .main { padding: 34px 40px 60px; overflow-y: auto; }
+    .main-head { margin-bottom: 24px; }
+    .main-head h1 { font-family: 'Fraunces', serif; font-size: 29px; font-weight: 600; letter-spacing: -.02em; }
+    .main-head p { color: var(--ink-soft); font-size: 14.5px; margin-top: 4px; }
+
+    .composer { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 34px; }
+    .composer textarea { min-height: 120px; font-size: 15.5px; line-height: 1.65; border: none; padding: 4px 2px; }
+    .composer textarea:focus { box-shadow: none; }
+    .composer-foot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line-soft); padding-top: 14px; margin-top: 6px; }
+    .composer-foot .hint { font-size: 12.5px; color: var(--ink-faint); display: flex; align-items: center; gap: 6px; }
+
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 16px; }
+    .section-head h3 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 18px; }
+    .section-head .link { background: transparent; color: var(--accent-ink); font-weight: 600; font-size: 13px; padding: 4px; }
+    .section-head .link:hover { text-decoration: underline; }
+    .section-head .count { font-size: 13px; color: var(--ink-faint); }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .toolbar .grow { flex: 1; min-width: 180px; }
+    .toolbar .lbl { font-size: 12.5px; color: var(--ink-faint); font-weight: 500; }
+
+    .search-note { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); margin: -4px 2px 16px; }
+    .search-note button { background: transparent; color: var(--accent-ink); font-weight: 600; font-size: 13px; padding: 0; }
+    .search-note button:hover { text-decoration: underline; }
+
+    .entries { display: flex; flex-direction: column; gap: 14px; }
+    .entry { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; animation: rise .3s ease both; transition: box-shadow .15s, transform .15s; }
+    .entry:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+    .entry:hover .entry-actions { opacity: 1; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .entry-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .mood { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 5px 13px 5px 10px; border-radius: 999px; text-transform: capitalize; }
+    .mood .emoji { font-size: 15px; }
+    .entry-date { font-size: 12.5px; color: var(--ink-faint); }
+    .entry-body { font-size: 15px; line-height: 1.68; color: #3a392f; white-space: pre-wrap; word-break: break-word; }
+    .entry-actions { margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px; opacity: 0; transition: opacity .15s; }
+    .act { background: transparent; color: var(--ink-faint); font-size: 12.5px; font-weight: 600; padding: 6px 11px; border-radius: 8px; }
+    .act:hover { background: var(--surface-3); color: var(--ink); }
+    .act.del:hover { background: #fbeae5; color: var(--danger); }
+    .edit-box textarea { min-height: 92px; font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+    .edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+    .empty { text-align: center; padding: 60px 24px; color: var(--ink-faint); }
+    .empty .big { font-size: 40px; margin-bottom: 12px; }
+    .empty p { font-size: 14.5px; }
+
+    .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 7px; }
+    .spinner.dark { border-color: rgba(43,42,38,.2); border-top-color: var(--ink-soft); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; margin: 0; min-height: 100vh; border-radius: 0; border: none; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
+      .sidebar .spacer { display: none; }
+      .main { padding: 26px 20px 60px; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- AUTH -->
+  <div id="auth-view">
+    <div class="auth-card">
+      <div class="brand"><span class="dot">✶</span> Journalize</div>
+      <p class="auth-sub">Your private journal, with a little AI insight.</p>
+      <div class="tabs">
+        <button id="tab-login" class="active" onclick="switchTab('login')">Sign in</button>
+        <button id="tab-register" onclick="switchTab('register')">Create account</button>
+      </div>
+      <div id="auth-msg" class="msg"></div>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="field"><label>Username</label><input id="login-username" autocomplete="username" placeholder="your username" required /></div>
+        <div class="field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••" required /></div>
+        <button class="btn-primary" type="submit" id="login-btn">Sign in</button>
+      </form>
+      <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
+        <div class="field"><label>Username</label><input id="reg-username" autocomplete="username" placeholder="choose a username" required /></div>
+        <div class="field"><label>Email</label><input id="reg-email" type="email" autocomplete="email" placeholder="you@example.com" required /></div>
+        <div class="field"><label>Password</label><input id="reg-password" type="password" autocomplete="new-password" placeholder="at least 8 characters" required /></div>
+        <button class="btn-primary" type="submit" id="register-btn">Create account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-view">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="dot">✶</span> Journalize</div>
+        <div class="greeting">
+          <div class="hi" id="greeting-hi">Hello</div>
+          <div class="date" id="greeting-date"></div>
+        </div>
+        <nav class="nav">
+          <button id="nav-write" class="active" onclick="setView('write')"><span class="ic">✎</span> Write</button>
+          <button id="nav-entries" onclick="setView('entries')"><span class="ic">≡</span> All entries</button>
+        </nav>
+        <div class="panel">
+          <div class="panel-title">Overview</div>
+          <div class="stat-row">
+            <div class="stat"><div class="num" id="stat-total">0</div><div class="lab">entries</div></div>
+            <div class="stat"><div class="num" id="stat-week">0</div><div class="lab">this week</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Moods lately</div>
+          <div id="mood-insights"></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="signout">
+          <span class="name" id="who-name"></span>
+          <button class="btn-ghost" onclick="logout()">Sign out</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <!-- WRITE VIEW -->
+        <section id="view-write">
+          <div class="main-head">
+            <h1>Your Journal</h1>
+            <p>Write freely — Journalize quietly notices how you're feeling.</p>
+          </div>
+          <div class="composer">
+            <textarea id="entry-input" placeholder="What's on your mind today?"></textarea>
+            <div class="composer-foot">
+              <span class="hint">✶ AI detects the mood of each entry</span>
+              <button class="btn-primary" id="save-btn" onclick="createEntry()">Save entry</button>
+            </div>
+          </div>
+          <div class="section-head">
+            <h3>Recent</h3>
+            <button class="link" onclick="setView('entries')">View all →</button>
+          </div>
+          <div class="entries" id="recent-entries"></div>
+        </section>
+
+        <!-- ENTRIES VIEW -->
+        <section id="view-entries" style="display:none">
+          <div class="main-head">
+            <h1>All Entries</h1>
+            <p>Browse, sort, filter, or search your journal by meaning.</p>
+          </div>
+          <div class="toolbar">
+            <input class="grow" id="search-input" placeholder="Search by meaning… e.g. “when was I stressed about work?”"
+              onkeydown="if(event.key==='Enter')doSearch()" />
+            <button class="btn-soft" id="search-btn" onclick="doSearch()">Search</button>
+            <select id="sort-select" onchange="renderEntriesView()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="mood">By mood (A–Z)</option>
+            </select>
+            <select id="mood-filter" onchange="renderEntriesView()">
+              <option value="all">All moods</option>
+            </select>
+          </div>
+          <div class="search-note" id="search-note" style="display:none"></div>
+          <div class="section-head">
+            <h3 id="entries-title">Entries</h3>
+            <span class="count" id="entry-count"></span>
+          </div>
+          <div class="entries" id="entries"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'journalize_token';
+    const NAME_KEY = 'journalize_name';
+    let token = localStorage.getItem(TOKEN_KEY);
+    let currentEntries = [];
+    let editingId = null;
+    let view = 'write';
+    let searchResults = null;     // null = not searching; array = search results
+    let searchQuery = '';
+
+    const MOODS = {
+      happy: { e: '😊', bg: '#fdf2d6', fg: '#9a6b12' }, joyful: { e: '😄', bg: '#fdf2d6', fg: '#9a6b12' },
+      excited: { e: '🤩', bg: '#ffe9d6', fg: '#a85a1c' }, grateful: { e: '🙏', bg: '#e3f3e3', fg: '#3a7d44' },
+      hopeful: { e: '🌱', bg: '#e3f3e3', fg: '#3a7d44' }, content: { e: '😌', bg: '#def1ee', fg: '#2c7a6e' },
+      calm: { e: '😌', bg: '#def1ee', fg: '#2c7a6e' }, peaceful: { e: '🍃', bg: '#def1ee', fg: '#2c7a6e' },
+      proud: { e: '😌', bg: '#ece6fb', fg: '#5b4bc0' }, relieved: { e: '😮‍💨', bg: '#ece6fb', fg: '#5b4bc0' },
+      sad: { e: '😢', bg: '#e1ebf7', fg: '#3a6098' }, lonely: { e: '🌧️', bg: '#e1ebf7', fg: '#3a6098' },
+      anxious: { e: '😰', bg: '#efe6f7', fg: '#7a4ea3' }, stressed: { e: '😣', bg: '#efe6f7', fg: '#7a4ea3' },
+      nervous: { e: '😬', bg: '#efe6f7', fg: '#7a4ea3' }, overwhelmed: { e: '🌀', bg: '#efe6f7', fg: '#7a4ea3' },
+      tired: { e: '😴', bg: '#eceae4', fg: '#6b675e' }, angry: { e: '😠', bg: '#fbe2dc', fg: '#b2492f' },
+      frustrated: { e: '😤', bg: '#fbe2dc', fg: '#b2492f' },
+    };
+    function moodStyle(mood) {
+      if (!mood) return { e: '🌀', bg: '#eceae4', fg: '#9b968b', label: 'no mood' };
+      const m = MOODS[mood.toLowerCase()];
+      return m ? { ...m, label: mood } : { e: '🌀', bg: '#ece6fb', fg: '#5b4bc0', label: mood };
+    }
+
+    function switchTab(which) {
+      const login = which === 'login';
+      document.getElementById('tab-login').classList.toggle('active', login);
+      document.getElementById('tab-register').classList.toggle('active', !login);
+      document.getElementById('login-form').style.display = login ? '' : 'none';
+      document.getElementById('register-form').style.display = login ? 'none' : '';
+      clearMsg();
+    }
+    function showApp() {
+      document.getElementById('auth-view').style.display = 'none';
+      document.getElementById('app-view').style.display = 'block';
+      const name = localStorage.getItem(NAME_KEY) || '';
+      document.getElementById('who-name').textContent = name;
+      setGreeting(name);
+      setView('write');
+      loadEntries();
+    }
+    function showAuth() { document.getElementById('app-view').style.display = 'none'; document.getElementById('auth-view').style.display = 'grid'; }
+    function setGreeting(name) {
+      const h = new Date().getHours();
+      const part = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+      document.getElementById('greeting-hi').textContent = name ? `${part}, ${name}` : part;
+      document.getElementById('greeting-date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    function setView(v) {
+      view = v;
+      document.getElementById('nav-write').classList.toggle('active', v === 'write');
+      document.getElementById('nav-entries').classList.toggle('active', v === 'entries');
+      document.getElementById('view-write').style.display = v === 'write' ? '' : 'none';
+      document.getElementById('view-entries').style.display = v === 'entries' ? '' : 'none';
+      if (v === 'entries') renderEntriesView();
+    }
+
+    function showMsg(t) { const el = document.getElementById('auth-msg'); el.textContent = t; el.className = 'msg error'; }
+    function clearMsg() { document.getElementById('auth-msg').className = 'msg'; }
+
+    async function api(path, options = {}) {
+      const opts = { ...options, headers: { ...(options.headers || {}) } };
+      if (opts.body) opts.headers['Content-Type'] = 'application/json';
+      if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch(path, opts);
+      if (res.status === 401 || res.status === 403) { if (token) logout(); throw new Error('session'); }
+      return res;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault(); clearMsg();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Signing in…';
+      try {
+        const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+        if (!res.ok) throw new Error('Invalid username or password.');
+        const data = await res.json();
+        token = data.token; localStorage.setItem(TOKEN_KEY, token); localStorage.setItem(NAME_KEY, username);
+        showApp();
+      } catch (err) { showMsg(err.message); } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+    }
+    async function handleRegister(e) {
+      e.preventDefault(); clearMsg();
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Creating…';
+      try {
+        const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, password }) });
+        if (res.status === 409) throw new Error('That username is already taken.');
+        if (res.status === 400) throw new Error('Use a valid email and an 8+ character password.');
+        if (!res.ok) throw new Error('Could not create account. Try again.');
+        const loginRes = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+        const data = await loginRes.json();
+        token = data.token; localStorage.setItem(TOKEN_KEY, token); localStorage.setItem(NAME_KEY, username);
+        showApp();
+      } catch (err) { showMsg(err.message); } finally { btn.disabled = false; btn.textContent = 'Create account'; }
+    }
+    function logout() {
+      token = null; localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(NAME_KEY);
+      editingId = null; currentEntries = []; searchResults = null;
+      document.getElementById('login-form').reset(); showAuth(); switchTab('login');
+    }
+
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+
+    async function loadEntries() {
+      try {
+        const res = await api('/api/entries');
+        currentEntries = await res.json();   // newest first from API
+        renderInsights();
+        renderRecent();
+        buildMoodFilter();
+        if (view === 'entries') renderEntriesView();
+      } catch (err) { }
+    }
+
+    function renderInsights() {
+      document.getElementById('stat-total').textContent = currentEntries.length;
+      const weekAgo = Date.now() - 7 * 864e5;
+      document.getElementById('stat-week').textContent = currentEntries.filter(e => new Date(e.createdAt).getTime() >= weekAgo).length;
+      const counts = {};
+      currentEntries.forEach(e => { if (e.mood) counts[e.mood.toLowerCase()] = (counts[e.mood.toLowerCase()] || 0) + 1; });
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const box = document.getElementById('mood-insights');
+      if (!sorted.length) { box.innerHTML = '<div class="muted-empty">No moods yet. Write an entry and your patterns will show up here.</div>'; return; }
+      const max = sorted[0][1];
+      box.innerHTML = sorted.map(([mood, ct]) => {
+        const m = moodStyle(mood);
+        return `<div class="mood-row"><span class="ico">${m.e}</span><span class="nm">${mood}</span><span class="bar"><i style="width:${Math.round(ct / max * 100)}%;background:${m.fg}"></i></span><span class="ct">${ct}</span></div>`;
+      }).join('');
+    }
+
+    function renderRecent() {
+      const list = document.getElementById('recent-entries');
+      const recent = currentEntries.slice(0, 3);
+      if (!recent.length) { list.innerHTML = `<div class="empty"><div class="big">📖</div><p>No entries yet. Write your first one above.</p></div>`; return; }
+      list.innerHTML = recent.map(entryTemplate).join('');
+    }
+
+    function buildMoodFilter() {
+      const sel = document.getElementById('mood-filter');
+      const prev = sel.value;
+      const moods = [...new Set(currentEntries.filter(e => e.mood).map(e => e.mood.toLowerCase()))].sort();
+      sel.innerHTML = '<option value="all">All moods</option>' + moods.map(m => `<option value="${m}">${m}</option>`).join('');
+      sel.value = moods.includes(prev) || prev === 'all' ? prev : 'all';
+    }
+
+    function renderEntriesView() {
+      const list = document.getElementById('entries');
+      const note = document.getElementById('search-note');
+      const title = document.getElementById('entries-title');
+      const count = document.getElementById('entry-count');
+
+      // search mode
+      if (searchResults !== null) {
+        note.style.display = 'flex';
+        note.innerHTML = `<span>Showing ${searchResults.length} result${searchResults.length === 1 ? '' : 's'} for “${escapeHtml(searchQuery)}”, ranked by meaning</span><button onclick="clearSearch()">Clear search</button>`;
+        title.textContent = 'Search results'; count.textContent = '';
+        list.innerHTML = searchResults.length ? searchResults.map(en => en.id === editingId ? editTemplate(en) : entryTemplate(en)).join('') : `<div class="empty"><div class="big">🔍</div><p>No matching entries found.</p></div>`;
+        return;
+      }
+
+      note.style.display = 'none';
+      title.textContent = 'Entries';
+      const sort = document.getElementById('sort-select').value;
+      const filter = document.getElementById('mood-filter').value;
+      let items = currentEntries.slice();
+      if (filter !== 'all') items = items.filter(e => (e.mood || '').toLowerCase() === filter);
+      if (sort === 'oldest') items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      else if (sort === 'newest') items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      else if (sort === 'mood') items.sort((a, b) => (a.mood || 'zzz').localeCompare(b.mood || 'zzz'));
+
+      count.textContent = items.length ? `${items.length} ${items.length === 1 ? 'entry' : 'entries'}` : '';
+      list.innerHTML = items.length ? items.map(en => en.id === editingId ? editTemplate(en) : entryTemplate(en)).join('') : `<div class="empty"><div class="big">📖</div><p>No entries match this filter.</p></div>`;
+    }
+
+    function entryTemplate(en) {
+      const m = moodStyle(en.mood);
+      return `<div class="entry">
+        <div class="entry-top">
+          <span class="mood" style="background:${m.bg};color:${m.fg}"><span class="emoji">${m.e}</span>${m.label}</span>
+          <span class="entry-date">${formatDate(en.createdAt)}</span>
+        </div>
+        <div class="entry-body">${escapeHtml(en.content)}</div>
+        <div class="entry-actions">
+          <button class="act" onclick="startEdit(${en.id})">Edit</button>
+          <button class="act del" onclick="deleteEntry(${en.id})">Delete</button>
+        </div>
+      </div>`;
+    }
+    function editTemplate(en) {
+      return `<div class="entry edit-box">
+        <textarea id="edit-input-${en.id}">${escapeHtml(en.content)}</textarea>
+        <div class="edit-actions">
+          <button class="btn-soft" onclick="cancelEdit()">Cancel</button>
+          <button class="btn-primary" id="edit-save-${en.id}" onclick="saveEdit(${en.id})">Save changes</button>
+        </div>
+      </div>`;
+    }
+
+    function rerender() { renderRecent(); if (view === 'entries') renderEntriesView(); }
+    function startEdit(id) { editingId = id; rerender(); const ta = document.getElementById('edit-input-' + id); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }
+    function cancelEdit() { editingId = null; rerender(); }
+
+    async function saveEdit(id) {
+      const ta = document.getElementById('edit-input-' + id);
+      const content = ta.value.trim();
+      if (!content) { ta.focus(); return; }
+      const btn = document.getElementById('edit-save-' + id);
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+      try { await api('/api/entries/' + id, { method: 'PUT', body: JSON.stringify({ content }) }); editingId = null; searchResults = null; await loadEntries(); }
+      catch (err) { if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; } }
+    }
+
+    async function createEntry() {
+      const input = document.getElementById('entry-input');
+      const content = input.value.trim();
+      if (!content) { input.focus(); return; }
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analyzing…';
+      try { await api('/api/entries', { method: 'POST', body: JSON.stringify({ content }) }); input.value = ''; await loadEntries(); }
+      catch (err) { } finally { btn.disabled = false; btn.textContent = 'Save entry'; }
+    }
+
+    async function deleteEntry(id) {
+      try { await api('/api/entries/' + id, { method: 'DELETE' }); if (searchResults) searchResults = searchResults.filter(e => e.id !== id); await loadEntries(); } catch (err) { }
+    }
+
+    async function doSearch() {
+      const q = document.getElementById('search-input').value.trim();
+      if (!q) { clearSearch(); return; }
+      const btn = document.getElementById('search-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner dark"></span>…';
+      try {
+        const res = await api('/api/entries/search?q=' + encodeURIComponent(q));
+        searchResults = await res.json(); searchQuery = q;
+        renderEntriesView();
+      } catch (err) { } finally { btn.disabled = false; btn.textContent = 'Search'; }
+    }
+    function clearSearch() { searchResults = null; searchQuery = ''; document.getElementById('search-input').value = ''; renderEntriesView(); }
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && view === 'write' && editingId === null && document.getElementById('app-view').style.display === 'block') createEntry();
+    });
+
+    if (token) showApp(); else showAuth();
+  </script>
+</body>
+
+</html>

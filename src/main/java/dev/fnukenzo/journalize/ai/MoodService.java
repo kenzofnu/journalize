@@ -29,7 +29,7 @@ public class MoodService {
 
     public MoodService(
             @Value("${gemini.api.key:}") String apiKey,
-            @Value("${gemini.model:gemini-2.0-flash}") String model,
+            @Value("${gemini.model:gemini-2.5-flash}") String model,
             @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models}") String apiUrl) {
         this.apiKey = apiKey;
         this.model = model;

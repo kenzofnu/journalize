@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.fnukenzo.journalize.AbstractIntegrationTest;
+import dev.fnukenzo.journalize.ai.EmbeddingService;
 import dev.fnukenzo.journalize.ai.MoodService;
 import dev.fnukenzo.journalize.user.UserRepository;
 
@@ -39,9 +40,12 @@ class JournalEntryControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private JournalEntryRepository entryRepository;
 
-    // Replace the real Gemini-calling service with a mock so tests never hit the network
+    // Replace the real Gemini-calling services with mocks so tests never hit the network
     @MockitoBean
     private MoodService moodService;
+
+    @MockitoBean
+    private EmbeddingService embeddingService;
 
     @BeforeEach
     void cleanDatabase() {
