@@ -19,7 +19,6 @@ import dev.fnukenzo.journalize.journal.dto.CreateEntryRequest;
 import dev.fnukenzo.journalize.journal.dto.EntryResponse;
 import dev.fnukenzo.journalize.journal.dto.UpdateEntryRequest;
 import dev.fnukenzo.journalize.user.User;
-import dev.fnukenzo.journalize.user.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 public class JournalEntryController {
 
     private final JournalEntryRepository entryRepository;
-    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<EntryResponse> create(@Valid @RequestBody CreateEntryRequest request,
