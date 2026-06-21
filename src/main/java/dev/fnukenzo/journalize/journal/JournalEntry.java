@@ -32,6 +32,9 @@ public class JournalEntry {
     @Column(nullable = false,columnDefinition = "TEXT")
     private String content;
 
+    @Column
+    private String mood;
+
     @ManyToOne(optional = false,fetch=FetchType.LAZY)
     @JoinColumn(name="user_id",nullable = false)
     private User user;

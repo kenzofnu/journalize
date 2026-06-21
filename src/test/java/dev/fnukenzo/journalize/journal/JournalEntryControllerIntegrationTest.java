@@ -13,9 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.fnukenzo.journalize.AbstractIntegrationTest;
+import dev.fnukenzo.journalize.ai.MoodService;
 import dev.fnukenzo.journalize.user.UserRepository;
 
 /**
@@ -26,7 +29,7 @@ import dev.fnukenzo.journalize.user.UserRepository;
 class JournalEntryControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
-    private MockMokvc mockMvc;
+    private MockMvc mockMvc;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -35,6 +38,10 @@ class JournalEntryControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JournalEntryRepository entryRepository;
+
+    // Replace the real Gemini-calling service with a mock so tests never hit the network
+    @MockitoBean
+    private MoodService moodService;
 
     @BeforeEach
     void cleanDatabase() {

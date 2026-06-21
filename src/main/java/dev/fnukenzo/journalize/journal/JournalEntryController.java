@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import dev.fnukenzo.journalize.ai.MoodService;
 import dev.fnukenzo.journalize.journal.dto.CreateEntryRequest;
 import dev.fnukenzo.journalize.journal.dto.EntryResponse;
 import dev.fnukenzo.journalize.journal.dto.UpdateEntryRequest;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class JournalEntryController {
 
     private final JournalEntryRepository entryRepository;
+    private final MoodService moodService;
 
     @PostMapping
     public ResponseEntity<EntryResponse> create(@Valid @RequestBody CreateEntryRequest request,
@@ -36,6 +38,7 @@ public class JournalEntryController {
         JournalEntry journal = new JournalEntry();
         journal.setContent(request.content());
         journal.setUser(user);
+        journal.setMood(moodService.detectMood(request.content()));
 
         JournalEntry saved = entryRepository.save(journal);
 
